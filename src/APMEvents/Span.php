@@ -57,7 +57,7 @@ class Span extends BaseSpan
      */
     public function setMessageContext(array $tags)
     {
-        $this->contexts['http'] = array_merge($this->contexts['http'], $tags);
+        $this->contexts['message'] = array_merge($this->contexts['message'], $tags);
     }
 
     /**
@@ -67,7 +67,7 @@ class Span extends BaseSpan
      */
     public function setServiceContext(array $tags)
     {
-        $this->contexts['http'] = array_merge($this->contexts['http'], $tags);
+        $this->contexts['service'] = array_merge($this->contexts['service'], $tags);
     }
 
     /**
