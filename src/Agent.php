@@ -2,6 +2,7 @@
 
 namespace AG\ElasticApmLaravel;
 
+use AG\ElasticApmLaravel\APMEvents\Span;
 use AG\ElasticApmLaravel\Collectors\EventDataCollector;
 use AG\ElasticApmLaravel\Contracts\DataCollector;
 use AG\ElasticApmLaravel\Exception\NoCurrentTransactionException;
@@ -12,7 +13,6 @@ use Nipwaayoni\Config;
 use Nipwaayoni\Contexts\ContextCollection;
 use Nipwaayoni\Events\EventFactoryInterface;
 use Nipwaayoni\Events\Metadata;
-use Nipwaayoni\Events\Span;
 use Nipwaayoni\Events\Transaction;
 use Nipwaayoni\Middleware\Connector;
 use Nipwaayoni\Stores\TransactionsStore;
@@ -40,13 +40,14 @@ class Agent extends NipwaayoniAgent
     private $app_config;
 
     public function __construct(
-        Config $config,
-        ContextCollection $sharedContext,
-        Connector $connector,
+        Config                $config,
+        ContextCollection     $sharedContext,
+        Connector             $connector,
         EventFactoryInterface $eventFactory,
-        TransactionsStore $transactionsStore,
-        Repository $app_config
-    ) {
+        TransactionsStore     $transactionsStore,
+        Repository            $app_config
+    )
+    {
         parent::__construct($config, $sharedContext, $connector, $eventFactory, $transactionsStore);
 
         $this->app_config = $app_config;
@@ -107,9 +108,31 @@ class Agent extends NipwaayoniAgent
                 $event = new Span($measure['label'], $transaction);
                 $event->setType($measure['type']);
                 $event->setAction($measure['action']);
-                $event->setCustomContext($measure['context']);
                 $event->setStartOffset($measure['start']);
                 $event->setDuration($measure['duration']);
+
+                dump($measure['label'], $measure['context']);
+
+                if (empty($measure['context']) === false) {
+                    if (empty($measure['context']['db']) === false) {
+                        $event->setDBContext($measure['context']['db']);
+                    }
+                    if (empty($measure['context']['destination']) === false) {
+                        $event->setDestinationContext($measure['context']['destination']);
+                    }
+                    if (empty($measure['context']['http']) === false) {
+                        $event->setHttpContext($measure['context']['http']);
+                    }
+                    if (empty($measure['context']['message']) === false) {
+                        $event->setMessageContext($measure['context']['message']);
+                    }
+                    if (empty($measure['context']['service']) === false) {
+                        $event->setServiceContext($measure['context']['service']);
+                    }
+                    if (empty($measure['context']['tags']) === false) {
+                        $event->setTags($measure['context']['tags']);
+                    }
+                }
 
                 $this->putEvent($event);
             });
