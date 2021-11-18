@@ -24,26 +24,26 @@ class DBQueryCollector extends EventDataCollector implements DataCollector
         });
     }
 
-    private function onQueryExecutedEvent(QueryExecuted $query): void
+    private function onQueryExecutedEvent(QueryExecuted $executed_query): void
     {
         if ('auto' === $this->config->get('elastic-apm-laravel.spans.querylog.enabled')) {
-            if ($query->time < $this->config->get('elastic-apm-laravel.spans.querylog.threshold')) {
+            if ($executed_query->time < $this->config->get('elastic-apm-laravel.spans.querylog.threshold')) {
                 return;
             }
         }
 
-        $start_time = $this->event_clock->microtime() - $this->start_time->microseconds() - $query->time / 1000;
-        $end_time = $start_time + $query->time / 1000;
+        $start_time = $this->event_clock->microtime() - $this->start_time->microseconds() - $executed_query->time / 1000;
+        $end_time = $start_time + $executed_query->time / 1000;
 
         $query = [
-            'name' => $this->getQueryName($query->sql),
-            'type' => 'db.mysql.query',
+            'name' => $this->getQueryName($executed_query->sql),
+            'type' => 'db.' . $this->getDatabaseType($executed_query) . '.query',
             'action' => 'query',
             'start' => $start_time,
             'end' => $end_time,
             'context' => [
                 'db' => [
-                    'statement' => (string) $query->sql,
+                    'statement' => (string) $executed_query->sql,
                     'type' => 'sql',
                 ],
             ],
@@ -76,5 +76,18 @@ class DBQueryCollector extends EventDataCollector implements DataCollector
         } catch (Exception $e) {
             return $fallback;
         }
+    }
+
+    protected function getDatabaseType(QueryExecuted $executed_query) {
+
+        if ($executed_query->connection) {
+            return strtolower($executed_query->connection->getDriverName());
+        }
+
+        if (!empty($executed_query->connectionName)) {
+            return strtolower($executed_query->connectionName);
+        }
+
+        return 'mysql';
     }
 }
