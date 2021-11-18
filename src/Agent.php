@@ -111,8 +111,6 @@ class Agent extends NipwaayoniAgent
                 $event->setStartOffset($measure['start']);
                 $event->setDuration($measure['duration']);
 
-                dump($measure['label'], $measure['context']);
-
                 if (empty($measure['context']) === false) {
                     if (empty($measure['context']['db']) === false) {
                         $event->setDBContext($measure['context']['db']);
