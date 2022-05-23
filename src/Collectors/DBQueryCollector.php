@@ -44,6 +44,7 @@ class DBQueryCollector extends EventDataCollector implements DataCollector
             'context' => [
                 'db' => [
                     'statement' => (string) $executed_query->sql,
+                    'bindings' => $executed_query->bindings,
                     'type' => 'sql',
                 ],
             ],

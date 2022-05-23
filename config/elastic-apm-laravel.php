@@ -36,6 +36,10 @@ return [
 
         // Hostname of the system the agent is running on.
         'hostname' => env('ELASTIC_APM_HOSTNAME', gethostname()),
+        
+        'container' => [
+            'id' => env('CONTAINER_ID', 'unknown'),
+        ],
     ],
 
     'agent' => [
