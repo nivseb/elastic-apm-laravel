@@ -16,6 +16,7 @@ use AG\ElasticApmLaravel\Middleware\RecordTransaction;
 use AG\ElasticApmLaravel\Services\ApmAgentService;
 use AG\ElasticApmLaravel\Services\ApmCollectorService;
 use Illuminate\Config\Repository;
+use Illuminate\Container\Container;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -115,8 +116,9 @@ class ServiceProvider extends BaseServiceProvider
 
         // Register a callback on terminating to send the events
         $this->app->terminating(function (Request $request, Response $response) {
+            $app = Container::getInstance();
             /** @var Agent $agent */
-            $agent = $this->app->make(Agent::class);
+            $agent = $app->make(Agent::class);
 
             $agent->send();
         });
@@ -203,22 +205,22 @@ class ServiceProvider extends BaseServiceProvider
         return config_path('elastic-apm-laravel.php');
     }
 
-    protected function getAgentConfig(): array
+    public function getAgentConfig(): array
     {
         return array_merge(
-                [
-                    'defaultServiceName' => config('elastic-apm-laravel.app.appName'),
-                    'frameworkName' => 'Laravel',
-                    'frameworkVersion' => app()->version(),
-                    'active' => config('elastic-apm-laravel.active'),
-                    'environment' => config('elastic-apm-laravel.env.environment'),
-                    'logger' => Log::getLogger(),
-                    'logLevel' => config('elastic-apm-laravel.log-level', 'error'),
-                ],
-                $this->getAppConfig(),
-                config('elastic-apm-laravel.server'),
-                config('elastic-apm-laravel.agent')
-            );
+            [
+                'defaultServiceName' => config('elastic-apm-laravel.app.appName'),
+                'frameworkName' => 'Laravel',
+                'frameworkVersion' => app()->version(),
+                'active' => config('elastic-apm-laravel.active'),
+                'environment' => config('elastic-apm-laravel.env.environment'),
+                'logger' => Log::getLogger(),
+                'logLevel' => config('elastic-apm-laravel.log-level', 'error'),
+            ],
+            $this->getAppConfig(),
+            config('elastic-apm-laravel.server'),
+            config('elastic-apm-laravel.agent')
+        );
     }
 
     protected function getAppConfig(): array

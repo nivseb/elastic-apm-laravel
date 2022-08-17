@@ -5,6 +5,7 @@ namespace AG\ElasticApmLaravel\Collectors;
 use AG\ElasticApmLaravel\Contracts\DataCollector;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Routing\Events\RouteMatched;
+use Illuminate\Routing\Route;
 
 /**
  * Collects info about the http request process.
@@ -23,9 +24,11 @@ class HttpRequestCollector extends EventDataCollector implements DataCollector
         });
 
         // Time between route resolution and request handled
-        $this->app->events->listen(RouteMatched::class, function () {
-            $this->startMeasure('request_handled', 'laravel', 'request', $this->getController());
-            $this->stopMeasure('route_matching');
+        $this->app->events->listen(RouteMatched::class, function (RouteMatched $event) {
+            $this->startMeasure('request_handled', 'laravel', 'request', $this->getController($event->route));
+            if ($this->started_measures->has('route_matching')) {
+                $this->stopMeasure('route_matching');
+            }
         });
 
         $this->app->events->listen(RequestHandled::class, function () {
@@ -37,12 +40,9 @@ class HttpRequestCollector extends EventDataCollector implements DataCollector
         });
     }
 
-    protected function getController(): ?string
+    protected function getController(Route $route): ?string
     {
-        $router = $this->app['router'];
-
-        $route = $router->current();
-        $controller = $route ? $route->getActionName() : null;
+        $controller = $route->getActionName();
 
         if ($controller instanceof \Closure) {
             $controller = 'anonymous function';
