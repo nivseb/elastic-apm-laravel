@@ -133,21 +133,21 @@ class ServiceProvider extends BaseServiceProvider
     protected function registerCollectors(): void
     {
         if ($this->collectFrameworkEvents()) {
-            $this->app->tag(FrameworkCollector::class, self::COLLECTOR_TAG);
+            $this->registerCollector(FrameworkCollector::class);
         }
 
         if (false !== config('elastic-apm-laravel.spans.querylog.enabled')) {
-            $this->app->tag(DBQueryCollector::class, self::COLLECTOR_TAG);
+            $this->registerCollector(DBQueryCollector::class);
         }
 
         if ($this->collectHttpEvents()) {
-            $this->app->tag(HttpRequestCollector::class, self::COLLECTOR_TAG);
+            $this->registerCollector(HttpRequestCollector::class);
         } else {
-            $this->app->tag(CommandCollector::class, self::COLLECTOR_TAG);
-            $this->app->tag(ScheduledTaskCollector::class, self::COLLECTOR_TAG);
+            $this->registerCollector(CommandCollector::class);
+            $this->registerCollector(ScheduledTaskCollector::class);
         }
-        $this->app->tag(JobCollector::class, self::COLLECTOR_TAG);
-        $this->app->tag(SpanCollector::class, self::COLLECTOR_TAG);
+        $this->registerCollector(JobCollector::class);
+        $this->registerCollector(SpanCollector::class);
     }
 
     protected function registerCollector(string $collectorClass): void
