@@ -5,6 +5,7 @@ namespace AG\ElasticApmLaravel;
 use AG\ElasticApmLaravel\Collectors\CommandCollector;
 use AG\ElasticApmLaravel\Collectors\DBQueryCollector;
 use AG\ElasticApmLaravel\Collectors\EventCounter;
+use AG\ElasticApmLaravel\Collectors\EventDataCollector;
 use AG\ElasticApmLaravel\Collectors\FrameworkCollector;
 use AG\ElasticApmLaravel\Collectors\HttpRequestCollector;
 use AG\ElasticApmLaravel\Collectors\JobCollector;
@@ -13,12 +14,13 @@ use AG\ElasticApmLaravel\Collectors\ScheduledTaskCollector;
 use AG\ElasticApmLaravel\Collectors\SpanCollector;
 use AG\ElasticApmLaravel\Contracts\DataCollector;
 use AG\ElasticApmLaravel\Contracts\VersionResolver;
+use AG\ElasticApmLaravel\Events\StartMeasuring;
 use AG\ElasticApmLaravel\Middleware\RecordTransaction;
 use Illuminate\Config\Repository;
 use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Container\Container;
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Http\Kernel;
-use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -48,7 +50,7 @@ class ServiceProvider extends BaseServiceProvider
         );
         $this->registerAgent();
 
-        if ( !$this->isAgentDisabled()) {
+        if (!$this->isAgentDisabled()) {
             $this->registerCollectors();
         }
     }
@@ -72,7 +74,7 @@ class ServiceProvider extends BaseServiceProvider
         // collectors all register their listeners before any work is done. Unlike the
         // FrameWorkCollector, the JobCollector needs an Agent object so it cannot be
         // created independently and discovered by the ServiceProvider later.
-        if ( !$this->collectHttpEvents()) {
+        if (!$this->collectHttpEvents()) {
             $this->app->make(Agent::class);
         }
     }
@@ -89,7 +91,7 @@ class ServiceProvider extends BaseServiceProvider
 
         $this->app->scoped(Agent::class, function () {
             /** @var AgentBuilder $builder */
-            $app     = Container::getInstance();
+            $app = Container::getInstance();
             $builder = $app->make(AgentBuilder::class);
 
             return $builder
@@ -150,13 +152,18 @@ class ServiceProvider extends BaseServiceProvider
         $this->registerCollector(SpanCollector::class);
     }
 
+    /**
+     * @param class-string<EventDataCollector> $collectorClass
+     * @return void
+     * @throws BindingResolutionException
+     */
     protected function registerCollector(string $collectorClass): void
     {
         $this->app->tag($collectorClass, self::COLLECTOR_TAG);
+        $collectorClass::registerEventListeners($this->app);
         $this->app->scoped($collectorClass, function () use ($collectorClass) {
-
             $app = Container::getInstance();
-
+            Log::debug(count($app->events->getListeners(StartMeasuring::class)));
             /** @var DataCollector $instance */
             $instance = new $collectorClass(
                 $app->make(ConfigRepository::class),
@@ -164,7 +171,6 @@ class ServiceProvider extends BaseServiceProvider
                 $app->make(EventCounter::class),
                 $app->make(EventClock::class)
             );
-            $instance->registerEventListeners($app);
             return $instance;
         });
     }
@@ -204,12 +210,12 @@ class ServiceProvider extends BaseServiceProvider
         return array_merge(
             [
                 'defaultServiceName' => config('elastic-apm-laravel.app.appName'),
-                'frameworkName'      => 'Laravel',
-                'frameworkVersion'   => app()->version(),
-                'active'             => config('elastic-apm-laravel.active'),
-                'environment'        => config('elastic-apm-laravel.env.environment'),
-                'logger'             => Log::getLogger(),
-                'logLevel'           => config('elastic-apm-laravel.log-level', 'error'),
+                'frameworkName' => 'Laravel',
+                'frameworkVersion' => app()->version(),
+                'active' => config('elastic-apm-laravel.active'),
+                'environment' => config('elastic-apm-laravel.env.environment'),
+                'logger' => Log::getLogger(),
+                'logLevel' => config('elastic-apm-laravel.log-level', 'error'),
             ],
             $this->getAppConfig(),
             config('elastic-apm-laravel.server'),

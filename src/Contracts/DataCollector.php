@@ -20,7 +20,7 @@ interface DataCollector
 
     public function getName(): string;
 
-    public function registerEventListeners(Container $app): void;
+    public static function registerEventListeners(Container $app): void;
 
     public function reset(): void;
 }

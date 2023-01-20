@@ -22,29 +22,31 @@ class CommandCollector extends EventDataCollector implements DataCollector
         return 'command-collector';
     }
 
-    public function registerEventListeners(Container $app): void
+    public static function registerEventListeners(Container $app): void
     {
         $app->events->listen(CommandStarting::class, function (CommandStarting $event) {
-            $transaction_name = $this->getTransactionName($event);
+            $collector = Container::getInstance()->make(static::class);
+            $transaction_name = $collector->getTransactionName($event);
             if ($transaction_name) {
-                $transaction = $this->getTransaction($transaction_name);
+                $transaction = $collector->getTransaction($transaction_name);
                 if (!$transaction) {
-                    $transaction = $this->startTransaction($transaction_name);
-                    $this->addMetadata($transaction);
+                    $transaction = $collector->startTransaction($transaction_name);
+                    $collector->addMetadata($transaction);
                 }
             }
         });
 
         $app->events->listen(CommandFinished::class, function (CommandFinished $event) {
-            $transaction_name = $this->getTransactionName($event);
+            $collector = Container::getInstance()->make(static::class);
+            $transaction_name = $collector->getTransactionName($event);
             if ($transaction_name) {
-                $transaction = $this->getTransaction($transaction_name);
+                $transaction = $collector->getTransaction($transaction_name);
                 if ($transaction) {
-                    $this->stopTransaction(
+                    $collector->stopTransaction(
                         $transaction_name,
                         $event->exitCode
                     );
-                    $this->send($event);
+                    $collector->send($event);
                 }
             }
         });

@@ -17,10 +17,11 @@ class SpanCollector extends EventDataCollector implements DataCollector
         return 'span-collector';
     }
 
-    public function registerEventListeners(Container $app): void
+    public static function registerEventListeners(Container $app): void
     {
-       $app->events->listen(StartMeasuring::class, function (StartMeasuring $event) {
-            $this->startMeasure(
+        $app->events->listen(StartMeasuring::class, function (StartMeasuring $event) {
+            $collector = Container::getInstance()->make(static::class);
+            $collector->startMeasure(
                 $event->name,
                 $event->type,
                 $event->action,
@@ -29,8 +30,9 @@ class SpanCollector extends EventDataCollector implements DataCollector
             );
         });
 
-       $app->events->listen(StopMeasuring::class, function (StopMeasuring $event) {
-            $this->stopMeasure($event->name, $event->params);
+        $app->events->listen(StopMeasuring::class, function (StopMeasuring $event) {
+            $collector = Container::getInstance()->make(static::class);
+            $collector->stopMeasure($event->name, $event->params);
         });
     }
 }

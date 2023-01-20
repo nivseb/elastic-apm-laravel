@@ -23,36 +23,40 @@ class ScheduledTaskCollector extends EventDataCollector implements DataCollector
         return 'scheduled-task-collector';
     }
 
-    public function registerEventListeners(Container $app): void
+    public static function registerEventListeners(Container $app): void
     {
        $app->events->listen(ScheduledTaskStarting::class, function (ScheduledTaskStarting $event) {
-            $transaction_name = $this->getTransactionName($event);
+           $collector = Container::getInstance()->make(static::class);
+            $transaction_name = $collector->getTransactionName($event);
             if ($transaction_name) {
-                $transaction = $this->getTransaction($transaction_name);
+                $transaction = $collector->getTransaction($transaction_name);
                 if (!$transaction) {
-                    $transaction = $this->startTransaction($transaction_name);
-                    $this->addMetadata($transaction);
+                    $transaction = $collector->startTransaction($transaction_name);
+                    $collector->addMetadata($transaction);
                 }
             }
         });
 
        $app->events->listen(ScheduledTaskSkipped::class, function (ScheduledTaskSkipped $event) {
-            $transaction_name = $this->getTransactionName($event);
+           $collector = Container::getInstance()->make(static::class);
+            $transaction_name = $collector->getTransactionName($event);
             if ($transaction_name) {
-                $transaction = $this->getTransaction($transaction_name);
+                $transaction = $collector->getTransaction($transaction_name);
                 if ($transaction) {
-                    $this->stopTransaction($transaction_name, $event->task->exitCode);
+                    $collector->stopTransaction($transaction_name, $event->task->exitCode);
                 }
             }
         });
 
        $app->events->listen(ScheduledTaskFinished::class, function (ScheduledTaskFinished $event) {
-            $transaction_name = $this->getTransactionName($event);
+           $collector = Container::getInstance()->make(static::class);
+           Log::debug(get_class($collector), [spl_object_id($collector)]);
+            $transaction_name = $collector->getTransactionName($event);
             if ($transaction_name) {
-                $transaction = $this->getTransaction($transaction_name);
+                $transaction = $collector->getTransaction($transaction_name);
                 if ($transaction) {
-                    $this->stopTransaction($transaction_name, $event->task->exitCode);
-                    $this->send($event);
+                    $collector->stopTransaction($transaction_name, $event->task->exitCode);
+                    $collector->send($event);
                 }
             }
         });

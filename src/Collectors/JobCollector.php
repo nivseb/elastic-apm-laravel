@@ -24,45 +24,48 @@ class JobCollector extends EventDataCollector implements DataCollector
         return 'job-collector';
     }
 
-    public function registerEventListeners(Container $app): void
+    public static function registerEventListeners(Container $app): void
     {
        $app->events->listen(JobProcessing::class, function (JobProcessing $event) use ($app) {
+           $collector = Container::getInstance()->make(static::class);
             if ($app->runningInConsole()) {
                 // Since the application starts only once for async queues, make sure
                 // the transaction and all spans have the correct start time.
-                $this->start_time->setStartTime($this->event_clock->microtime());
+                $collector->start_time->setStartTime($collector->event_clock->microtime());
             }
 
-            $transaction_name = $this->getTransactionName($event);
+            $transaction_name = $collector->getTransactionName($event);
             if ($transaction_name) {
-                $transaction = $this->getTransaction($transaction_name);
+                $transaction = $collector->getTransaction($transaction_name);
                 if (!$transaction) {
-                    $this->startTransaction($transaction_name);
-                    $this->setTransactionType($transaction_name);
-                    $this->addMetadata($transaction_name, $event->job);
+                    $collector->startTransaction($transaction_name);
+                    $collector->setTransactionType($transaction_name);
+                    $collector->addMetadata($transaction_name, $event->job);
                 }
             }
         });
 
        $app->events->listen(JobProcessed::class, function (JobProcessed $event) {
-            $transaction_name = $this->getTransactionName($event);
+           $collector = Container::getInstance()->make(static::class);
+            $transaction_name = $collector->getTransactionName($event);
             if ($transaction_name) {
-                $transaction = $this->getTransaction($transaction_name);
+                $transaction = $collector->getTransaction($transaction_name);
                 if ($transaction) {
-                    $this->stopTransaction($transaction_name, 200);
-                    $this->send($event->job);
+                    $collector->stopTransaction($transaction_name, 200);
+                    $collector->send($event->job);
                 }
             }
         });
 
        $app->events->listen(JobFailed::class, function (JobFailed $event) {
+           $collector = Container::getInstance()->make(static::class);
             $transaction_name = $this->getTransactionName($event);
             if ($transaction_name) {
-                $transaction = $this->getTransaction($transaction_name);
+                $transaction = $collector->getTransaction($transaction_name);
                 if ($transaction) {
-                    $this->agent->captureThrowable($event->exception, [], $transaction);
-                    $this->stopTransaction($transaction_name, 500);
-                    $this->send($event->job);
+                    $collector->agent->captureThrowable($event->exception, [], $transaction);
+                    $collector->stopTransaction($transaction_name, 500);
+                    $collector->send($event->job);
                 }
             }
         });
