@@ -3,6 +3,7 @@
 namespace AG\ElasticApmLaravel\Collectors;
 
 use AG\ElasticApmLaravel\Contracts\DataCollector;
+use Illuminate\Container\Container;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Routing\Route;
@@ -17,21 +18,21 @@ class HttpRequestCollector extends EventDataCollector implements DataCollector
         return 'request-collector';
     }
 
-    public function registerEventListeners(): void
+    public function registerEventListeners(Container $app): void
     {
-        $this->app->booted(function () {
+       $app->booted(function () {
             $this->startMeasure('route_matching', 'laravel', 'request', 'Route matching');
         });
 
         // Time between route resolution and request handled
-        $this->app->events->listen(RouteMatched::class, function (RouteMatched $event) {
+       $app->events->listen(RouteMatched::class, function (RouteMatched $event) {
             $this->startMeasure('request_handled', 'laravel', 'request', $this->getController($event->route));
             if ($this->started_measures->has('route_matching')) {
                 $this->stopMeasure('route_matching');
             }
         });
 
-        $this->app->events->listen(RequestHandled::class, function () {
+       $app->events->listen(RequestHandled::class, function () {
             // Some middlewares might return a response
             // before the RouteMatched has been dispatched
             if ($this->hasStartedMeasure('request_handled')) {

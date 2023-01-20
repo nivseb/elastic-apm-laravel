@@ -3,7 +3,7 @@
 use AG\ElasticApmLaravel\Agent;
 use AG\ElasticApmLaravel\AgentBuilder;
 use AG\ElasticApmLaravel\Collectors\SpanCollector;
-use AG\ElasticApmLaravel\Exception\MissingAppConfigurationException;
+use AG\ElasticApmLaravel\Http\Exception\MissingAppConfigurationException;
 use Codeception\Test\Unit;
 use Illuminate\Config\Repository as Config;
 

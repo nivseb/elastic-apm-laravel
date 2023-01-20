@@ -2,7 +2,7 @@
 
 namespace AG\ElasticApmLaravel\Jobs\Middleware;
 
-use AG\ElasticApmLaravel\Facades\ApmCollector;
+use AG\ElasticApmLaravel\Services\ApmCollectorService;
 
 class RecordTransaction
 {
@@ -20,10 +20,11 @@ class RecordTransaction
             return $next($job);
         }
 
-        ApmCollector::startMeasure('job_processing', 'job', 'processing', get_class($job) . ' processing');
+
+        app(ApmCollectorService::class)->startMeasure('job_processing', 'job', 'processing', get_class($job) . ' processing');
 
         $next($job);
 
-        ApmCollector::stopMeasure('job_processing');
+        app(ApmCollectorService::class)->stopMeasure('job_processing');
     }
 }

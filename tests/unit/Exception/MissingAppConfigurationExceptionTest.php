@@ -1,6 +1,6 @@
 <?php
 
-use AG\ElasticApmLaravel\Exception\MissingAppConfigurationException;
+use AG\ElasticApmLaravel\Http\Exception\MissingAppConfigurationException;
 use Codeception\Test\Unit;
 
 class MissingAppConfigurationExceptionTest extends Unit

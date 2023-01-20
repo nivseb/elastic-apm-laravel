@@ -3,6 +3,7 @@
 namespace AG\ElasticApmLaravel\Collectors;
 
 use AG\ElasticApmLaravel\Contracts\DataCollector;
+use Illuminate\Container\Container;
 
 /**
  * Collects info about the Laravel initialization.
@@ -14,7 +15,7 @@ class FrameworkCollector extends EventDataCollector implements DataCollector
         return 'framework-collector';
     }
 
-    public function registerEventListeners(): void
+    public function registerEventListeners(Container $app): void
     {
         // Application and Laravel startup times
         // LARAVEL_START is defined at the entry point of the application
@@ -25,12 +26,12 @@ class FrameworkCollector extends EventDataCollector implements DataCollector
 
         $this->startMeasure('app_boot', 'app', 'boot', 'App boot', $start_time);
 
-        $this->app->booting(function () {
+        $app->booting(function () {
             $this->startMeasure('laravel_boot', 'laravel', 'boot', 'Laravel boot');
             $this->stopMeasure('app_boot');
         });
 
-        $this->app->booted(function () {
+        $app->booted(function () {
             if ($this->hasStartedMeasure('laravel_boot')) {
                 $this->stopMeasure('laravel_boot');
             }

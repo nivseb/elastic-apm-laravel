@@ -9,6 +9,7 @@ use Illuminate\Config\Repository as Config;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Nipwaayoni\Events\Transaction;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
@@ -63,7 +64,29 @@ class RecordTransaction
 
         $this->addMetadata($transaction, $request, $response);
 
+        $this->addServerMetricsToHeader($response);
+
         return $response;
+    }
+
+    protected function addServerMetricsToHeader(Response $response) {
+        $arrays = [];
+        foreach ($this->agent->getCollectors() as $collector) {
+            $data = $collector->collect();
+            foreach ($data as $bloddyArray) {
+                if (str_contains($bloddyArray['label'], '@')) {
+                    // aggregated route matching collector - ignore since sum of others
+                    continue;
+                }
+                $arrays[] = $bloddyArray + ['collector' => get_class($collector)];
+            }
+        }
+        $metrics = collect($arrays)->sortBy('start');
+        $headerMetrics = [];
+        foreach ($metrics as $metric) {
+            $headerMetrics[] = Str::slug($metric['type']) . ';dur=' . $metric['duration'] . ';desc="' . $metric['label'] . '"';
+        }
+        $response->headers->set('Server-Timing', implode(',', $headerMetrics));
     }
 
     public function addMetadata(Transaction $transaction, Request $request, Response $response): void

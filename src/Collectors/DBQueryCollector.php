@@ -4,6 +4,7 @@ namespace AG\ElasticApmLaravel\Collectors;
 
 use AG\ElasticApmLaravel\Contracts\DataCollector;
 use Exception;
+use Illuminate\Container\Container;
 use Illuminate\Database\Events\QueryExecuted;
 use Jasny\DB\MySQL\QuerySplitter;
 
@@ -17,9 +18,9 @@ class DBQueryCollector extends EventDataCollector implements DataCollector
         return 'query-collector';
     }
 
-    public function registerEventListeners(): void
+    public function registerEventListeners(Container $app): void
     {
-        $this->app->events->listen(QueryExecuted::class, function (QueryExecuted $query) {
+       $app->events->listen(QueryExecuted::class, function (QueryExecuted $query) {
             $this->onQueryExecutedEvent($query);
         });
     }

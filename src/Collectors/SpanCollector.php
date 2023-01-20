@@ -5,6 +5,7 @@ namespace AG\ElasticApmLaravel\Collectors;
 use AG\ElasticApmLaravel\Contracts\DataCollector;
 use AG\ElasticApmLaravel\Events\StartMeasuring;
 use AG\ElasticApmLaravel\Events\StopMeasuring;
+use Illuminate\Container\Container;
 
 /**
  * Generic collector for spans measured manually throughout the app.
@@ -16,9 +17,9 @@ class SpanCollector extends EventDataCollector implements DataCollector
         return 'span-collector';
     }
 
-    public function registerEventListeners(): void
+    public function registerEventListeners(Container $app): void
     {
-        $this->app->events->listen(StartMeasuring::class, function (StartMeasuring $event) {
+       $app->events->listen(StartMeasuring::class, function (StartMeasuring $event) {
             $this->startMeasure(
                 $event->name,
                 $event->type,
@@ -28,7 +29,7 @@ class SpanCollector extends EventDataCollector implements DataCollector
             );
         });
 
-        $this->app->events->listen(StopMeasuring::class, function (StopMeasuring $event) {
+       $app->events->listen(StopMeasuring::class, function (StopMeasuring $event) {
             $this->stopMeasure($event->name, $event->params);
         });
     }

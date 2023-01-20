@@ -11,13 +11,14 @@ use AG\ElasticApmLaravel\Collectors\JobCollector;
 use AG\ElasticApmLaravel\Collectors\RequestStartTime;
 use AG\ElasticApmLaravel\Collectors\ScheduledTaskCollector;
 use AG\ElasticApmLaravel\Collectors\SpanCollector;
+use AG\ElasticApmLaravel\Contracts\DataCollector;
 use AG\ElasticApmLaravel\Contracts\VersionResolver;
 use AG\ElasticApmLaravel\Middleware\RecordTransaction;
-use AG\ElasticApmLaravel\Services\ApmAgentService;
-use AG\ElasticApmLaravel\Services\ApmCollectorService;
 use Illuminate\Config\Repository;
+use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -37,18 +38,17 @@ class ServiceProvider extends BaseServiceProvider
     {
         $this->mergeConfigFrom($this->source_config_path, 'elastic-apm-laravel');
 
-        // Always available, even when inactive
-        $this->registerFacades();
+        $this->app->singleton(EventClock::class, fn() => new EventClock());
 
         // Create a single representation of the request start time which can be injected
         // to other classes.
-        $this->app->singleton(RequestStartTime::class, function () {
-            return new RequestStartTime($this->app['request']->server('REQUEST_TIME_FLOAT') ?? microtime(true));
-        });
-
+        $this->app->scoped(
+            RequestStartTime::class,
+            fn() => new RequestStartTime(Container::getInstance()['request']->server('REQUEST_TIME_FLOAT') ?? microtime(true))
+        );
         $this->registerAgent();
 
-        if (!$this->isAgentDisabled()) {
+        if ( !$this->isAgentDisabled()) {
             $this->registerCollectors();
         }
     }
@@ -72,23 +72,9 @@ class ServiceProvider extends BaseServiceProvider
         // collectors all register their listeners before any work is done. Unlike the
         // FrameWorkCollector, the JobCollector needs an Agent object so it cannot be
         // created independently and discovered by the ServiceProvider later.
-        if (!$this->collectHttpEvents()) {
+        if ( !$this->collectHttpEvents()) {
             $this->app->make(Agent::class);
         }
-    }
-
-    /**
-     * Register Facades into the Service Container.
-     */
-    protected function registerFacades(): void
-    {
-        $this->app->bind('apm-collector', function ($app) {
-            return $app->make(ApmCollectorService::class);
-        });
-
-        $this->app->bind('apm-agent', function ($app) {
-            return $app->make(ApmAgentService::class);
-        });
     }
 
     /**
@@ -96,21 +82,21 @@ class ServiceProvider extends BaseServiceProvider
      */
     protected function registerAgent(): void
     {
-        $this->app->singleton(EventCounter::class, function () {
-            $limit = config('elastic-apm-laravel.spans.maxTraceItems', EventCounter::EVENT_LIMIT);
+        $this->app->scoped(
+            EventCounter::class,
+            fn() => new EventCounter(config('elastic-apm-laravel.spans.maxTraceItems', EventCounter::EVENT_LIMIT))
+        );
 
-            return new EventCounter($limit);
-        });
-
-        $this->app->singleton(Agent::class, function () {
+        $this->app->scoped(Agent::class, function () {
             /** @var AgentBuilder $builder */
-            $builder = $this->app->make(AgentBuilder::class);
+            $app     = Container::getInstance();
+            $builder = $app->make(AgentBuilder::class);
 
             return $builder
                 ->withConfig(new Config($this->getAgentConfig()))
                 ->withEnvData(config('elastic-apm-laravel.env.env'))
-                ->withAppConfig($this->app->make(Repository::class))
-                ->withEventCollectors(collect($this->app->tagged(self::COLLECTOR_TAG)))
+                ->withAppConfig($app->make(Repository::class))
+                ->withEventCollectors(collect($app->tagged(self::COLLECTOR_TAG)))
                 ->build();
         });
 
@@ -147,32 +133,40 @@ class ServiceProvider extends BaseServiceProvider
     protected function registerCollectors(): void
     {
         if ($this->collectFrameworkEvents()) {
-            // Force the FrameworkCollector instance to be created and used. While this appears odd,
-            // the collector instance registers itself to listen for booting events, so that instance
-            // must be made available for collection later.
-            $this->app->instance(FrameworkCollector::class, $this->app->make(FrameworkCollector::class));
-
             $this->app->tag(FrameworkCollector::class, self::COLLECTOR_TAG);
         }
 
         if (false !== config('elastic-apm-laravel.spans.querylog.enabled')) {
-            // DB Queries collector
             $this->app->tag(DBQueryCollector::class, self::COLLECTOR_TAG);
         }
 
-        // Http request collector
         if ($this->collectHttpEvents()) {
             $this->app->tag(HttpRequestCollector::class, self::COLLECTOR_TAG);
         } else {
             $this->app->tag(CommandCollector::class, self::COLLECTOR_TAG);
             $this->app->tag(ScheduledTaskCollector::class, self::COLLECTOR_TAG);
         }
-
-        // Job collector
         $this->app->tag(JobCollector::class, self::COLLECTOR_TAG);
-
-        // Collector for manual measurements throughout the app
         $this->app->tag(SpanCollector::class, self::COLLECTOR_TAG);
+    }
+
+    protected function registerCollector(string $collectorClass): void
+    {
+        $this->app->tag($collectorClass, self::COLLECTOR_TAG);
+        $this->app->scoped($collectorClass, function () use ($collectorClass) {
+
+            $app = Container::getInstance();
+
+            /** @var DataCollector $instance */
+            $instance = new $collectorClass(
+                $app->make(ConfigRepository::class),
+                $app->make(RequestStartTime::class),
+                $app->make(EventCounter::class),
+                $app->make(EventClock::class)
+            );
+            $instance->registerEventListeners($app);
+            return $instance;
+        });
     }
 
     private function collectFrameworkEvents(): bool
@@ -210,12 +204,12 @@ class ServiceProvider extends BaseServiceProvider
         return array_merge(
             [
                 'defaultServiceName' => config('elastic-apm-laravel.app.appName'),
-                'frameworkName' => 'Laravel',
-                'frameworkVersion' => app()->version(),
-                'active' => config('elastic-apm-laravel.active'),
-                'environment' => config('elastic-apm-laravel.env.environment'),
-                'logger' => Log::getLogger(),
-                'logLevel' => config('elastic-apm-laravel.log-level', 'error'),
+                'frameworkName'      => 'Laravel',
+                'frameworkVersion'   => app()->version(),
+                'active'             => config('elastic-apm-laravel.active'),
+                'environment'        => config('elastic-apm-laravel.env.environment'),
+                'logger'             => Log::getLogger(),
+                'logLevel'           => config('elastic-apm-laravel.log-level', 'error'),
             ],
             $this->getAppConfig(),
             config('elastic-apm-laravel.server'),

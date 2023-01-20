@@ -3,7 +3,7 @@
 namespace AG\ElasticApmLaravel;
 
 use AG\ElasticApmLaravel\Collectors\EventDataCollector;
-use AG\ElasticApmLaravel\Exception\MissingAppConfigurationException;
+use AG\ElasticApmLaravel\Http\Exception\MissingAppConfigurationException;
 use Illuminate\Config\Repository;
 use Illuminate\Support\Collection;
 use Nipwaayoni\AgentBuilder as NipwaayoniAgentBuilder;

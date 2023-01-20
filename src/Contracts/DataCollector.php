@@ -3,6 +3,7 @@
 namespace AG\ElasticApmLaravel\Contracts;
 
 use AG\ElasticApmLaravel\Agent;
+use Illuminate\Container\Container;
 use Illuminate\Support\Collection;
 
 interface DataCollector
@@ -19,7 +20,7 @@ interface DataCollector
 
     public function getName(): string;
 
-    public function registerEventListeners(): void;
+    public function registerEventListeners(Container $app): void;
 
     public function reset(): void;
 }

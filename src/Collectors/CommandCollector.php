@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Console\Events\CommandFinished;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Container\Container;
 use Illuminate\Support\Facades\Log;
 use Nipwaayoni\Events\Transaction;
 use Throwable;
@@ -21,9 +22,9 @@ class CommandCollector extends EventDataCollector implements DataCollector
         return 'command-collector';
     }
 
-    public function registerEventListeners(): void
+    public function registerEventListeners(Container $app): void
     {
-        $this->app->events->listen(CommandStarting::class, function (CommandStarting $event) {
+        $app->events->listen(CommandStarting::class, function (CommandStarting $event) {
             $transaction_name = $this->getTransactionName($event);
             if ($transaction_name) {
                 $transaction = $this->getTransaction($transaction_name);
@@ -34,7 +35,7 @@ class CommandCollector extends EventDataCollector implements DataCollector
             }
         });
 
-        $this->app->events->listen(CommandFinished::class, function (CommandFinished $event) {
+        $app->events->listen(CommandFinished::class, function (CommandFinished $event) {
             $transaction_name = $this->getTransactionName($event);
             if ($transaction_name) {
                 $transaction = $this->getTransaction($transaction_name);
@@ -74,7 +75,7 @@ class CommandCollector extends EventDataCollector implements DataCollector
         try {
             $this->agent->send();
         } catch (ClientException $exception) {
-            Log::error($exception, ['api_response' => (string) $exception->getResponse()->getBody()]);
+            Log::error($exception, ['api_response' => (string)$exception->getResponse()->getBody()]);
         } catch (Throwable $t) {
             Log::error($t->getMessage());
         }

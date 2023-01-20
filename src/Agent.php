@@ -5,7 +5,7 @@ namespace AG\ElasticApmLaravel;
 use AG\ElasticApmLaravel\APMEvents\Span;
 use AG\ElasticApmLaravel\Collectors\EventDataCollector;
 use AG\ElasticApmLaravel\Contracts\DataCollector;
-use AG\ElasticApmLaravel\Exception\NoCurrentTransactionException;
+use AG\ElasticApmLaravel\Http\Exception\NoCurrentTransactionException;
 use Illuminate\Config\Repository;
 use Illuminate\Support\Collection;
 use Nipwaayoni\Agent as NipwaayoniAgent;
@@ -14,6 +14,7 @@ use Nipwaayoni\Contexts\ContextCollection;
 use Nipwaayoni\Events\EventFactoryInterface;
 use Nipwaayoni\Events\Metadata;
 use Nipwaayoni\Events\Transaction;
+use Nipwaayoni\Exception\Transaction\UnknownTransactionException;
 use Nipwaayoni\Middleware\Connector;
 use Nipwaayoni\Stores\TransactionsStore;
 
@@ -70,6 +71,10 @@ class Agent extends NipwaayoniAgent
         return $this->collectors->get($name);
     }
 
+    public function getCollectors() : Collection {
+        return $this->collectors;
+    }
+
     /**
      * We need to keep track of the current Transaction so the app can access it for
      * distributed tracing and other tasks. For now, we expect a single transaction
@@ -91,6 +96,9 @@ class Agent extends NipwaayoniAgent
         $this->current_transaction = null;
     }
 
+    /**
+     * @throws NoCurrentTransactionException
+     */
     public function currentTransaction(): Transaction
     {
         if (!$this->hasCurrentTransaction()) {
@@ -100,6 +108,9 @@ class Agent extends NipwaayoniAgent
         return $this->current_transaction;
     }
 
+    /**
+     * @throws UnknownTransactionException
+     */
     public function collectEvents(string $transaction_name): void
     {
         $transaction = $this->getTransaction($transaction_name);

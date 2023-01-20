@@ -1,6 +1,6 @@
 <?php
 
-use AG\ElasticApmLaravel\Exception\NoCurrentTransactionException;
+use AG\ElasticApmLaravel\Http\Exception\NoCurrentTransactionException;
 use Codeception\Test\Unit;
 
 class NoCurrentTransactionExceptionTest extends Unit

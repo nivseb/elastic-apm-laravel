@@ -7,6 +7,7 @@ use GuzzleHttp\Exception\ClientException;
 use Illuminate\Console\Events\ScheduledTaskFinished;
 use Illuminate\Console\Events\ScheduledTaskSkipped;
 use Illuminate\Console\Events\ScheduledTaskStarting;
+use Illuminate\Container\Container;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Nipwaayoni\Events\Transaction;
@@ -22,9 +23,9 @@ class ScheduledTaskCollector extends EventDataCollector implements DataCollector
         return 'scheduled-task-collector';
     }
 
-    public function registerEventListeners(): void
+    public function registerEventListeners(Container $app): void
     {
-        $this->app->events->listen(ScheduledTaskStarting::class, function (ScheduledTaskStarting $event) {
+       $app->events->listen(ScheduledTaskStarting::class, function (ScheduledTaskStarting $event) {
             $transaction_name = $this->getTransactionName($event);
             if ($transaction_name) {
                 $transaction = $this->getTransaction($transaction_name);
@@ -35,7 +36,7 @@ class ScheduledTaskCollector extends EventDataCollector implements DataCollector
             }
         });
 
-        $this->app->events->listen(ScheduledTaskSkipped::class, function (ScheduledTaskSkipped $event) {
+       $app->events->listen(ScheduledTaskSkipped::class, function (ScheduledTaskSkipped $event) {
             $transaction_name = $this->getTransactionName($event);
             if ($transaction_name) {
                 $transaction = $this->getTransaction($transaction_name);
@@ -45,7 +46,7 @@ class ScheduledTaskCollector extends EventDataCollector implements DataCollector
             }
         });
 
-        $this->app->events->listen(ScheduledTaskFinished::class, function (ScheduledTaskFinished $event) {
+       $app->events->listen(ScheduledTaskFinished::class, function (ScheduledTaskFinished $event) {
             $transaction_name = $this->getTransactionName($event);
             if ($transaction_name) {
                 $transaction = $this->getTransaction($transaction_name);

@@ -18,9 +18,6 @@ use Nipwaayoni\Exception\Transaction\UnknownTransactionException;
  */
 abstract class EventDataCollector implements DataCollector
 {
-    /** @var Application */
-    protected $app;
-
     /** @var Collection */
     protected $started_measures;
 
@@ -42,9 +39,8 @@ abstract class EventDataCollector implements DataCollector
     /** @var Agent */
     protected $agent;
 
-    final public function __construct(Application $app, Config $config, RequestStartTime $start_time, EventCounter $event_counter, EventClock $event_clock)
+    final public function __construct(Config $config, RequestStartTime $start_time, EventCounter $event_counter, EventClock $event_clock)
     {
-        $this->app = $app;
         $this->config = $config;
         $this->start_time = $start_time;
         $this->event_counter = $event_counter;
@@ -52,8 +48,6 @@ abstract class EventDataCollector implements DataCollector
 
         $this->started_measures = new Collection();
         $this->measures = new Collection();
-
-        $this->registerEventListeners();
     }
 
     public function useAgent(Agent $agent): void

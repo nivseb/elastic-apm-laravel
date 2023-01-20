@@ -118,7 +118,7 @@ class AgentTest extends Unit
 
     public function testThrowsExceptionWhenNoCurrentTransaction(): void
     {
-        $this->expectException(\AG\ElasticApmLaravel\Exception\NoCurrentTransactionException::class);
+        $this->expectException(\AG\ElasticApmLaravel\Http\Exception\NoCurrentTransactionException::class);
 
         $this->agent->currentTransaction();
     }

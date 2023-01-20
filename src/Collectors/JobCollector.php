@@ -4,6 +4,7 @@ namespace AG\ElasticApmLaravel\Collectors;
 
 use AG\ElasticApmLaravel\Contracts\DataCollector;
 use GuzzleHttp\Exception\ClientException;
+use Illuminate\Container\Container;
 use Illuminate\Contracts\Queue\Job;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
@@ -23,10 +24,10 @@ class JobCollector extends EventDataCollector implements DataCollector
         return 'job-collector';
     }
 
-    public function registerEventListeners(): void
+    public function registerEventListeners(Container $app): void
     {
-        $this->app->events->listen(JobProcessing::class, function (JobProcessing $event) {
-            if ($this->app->runningInConsole()) {
+       $app->events->listen(JobProcessing::class, function (JobProcessing $event) use ($app) {
+            if ($app->runningInConsole()) {
                 // Since the application starts only once for async queues, make sure
                 // the transaction and all spans have the correct start time.
                 $this->start_time->setStartTime($this->event_clock->microtime());
@@ -43,7 +44,7 @@ class JobCollector extends EventDataCollector implements DataCollector
             }
         });
 
-        $this->app->events->listen(JobProcessed::class, function (JobProcessed $event) {
+       $app->events->listen(JobProcessed::class, function (JobProcessed $event) {
             $transaction_name = $this->getTransactionName($event);
             if ($transaction_name) {
                 $transaction = $this->getTransaction($transaction_name);
@@ -54,7 +55,7 @@ class JobCollector extends EventDataCollector implements DataCollector
             }
         });
 
-        $this->app->events->listen(JobFailed::class, function (JobFailed $event) {
+       $app->events->listen(JobFailed::class, function (JobFailed $event) {
             $transaction_name = $this->getTransactionName($event);
             if ($transaction_name) {
                 $transaction = $this->getTransaction($transaction_name);
