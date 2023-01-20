@@ -163,7 +163,6 @@ class ServiceProvider extends BaseServiceProvider
         $collectorClass::registerEventListeners($this->app);
         $this->app->scoped($collectorClass, function () use ($collectorClass) {
             $app = Container::getInstance();
-            Log::debug(count($app->events->getListeners(StartMeasuring::class)));
             /** @var DataCollector $instance */
             $instance = new $collectorClass(
                 $app->make(ConfigRepository::class),

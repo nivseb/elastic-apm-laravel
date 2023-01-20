@@ -50,7 +50,6 @@ class ScheduledTaskCollector extends EventDataCollector implements DataCollector
 
        $app->events->listen(ScheduledTaskFinished::class, function (ScheduledTaskFinished $event) {
            $collector = Container::getInstance()->make(static::class);
-           Log::debug(get_class($collector), [spl_object_id($collector)]);
             $transaction_name = $collector->getTransactionName($event);
             if ($transaction_name) {
                 $transaction = $collector->getTransaction($transaction_name);
