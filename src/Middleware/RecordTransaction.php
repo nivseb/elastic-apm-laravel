@@ -64,7 +64,9 @@ class RecordTransaction
 
         $this->addMetadata($transaction, $request, $response);
 
-        $this->addServerMetricsToHeader($response);
+        if ($this->config->get('elastic-apm-laravel.sendMetricViaHeader')) {
+            $this->addServerMetricsToHeader($response);
+        }
 
         return $response;
     }
