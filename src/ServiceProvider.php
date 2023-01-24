@@ -14,8 +14,8 @@ use AG\ElasticApmLaravel\Collectors\ScheduledTaskCollector;
 use AG\ElasticApmLaravel\Collectors\SpanCollector;
 use AG\ElasticApmLaravel\Contracts\DataCollector;
 use AG\ElasticApmLaravel\Contracts\VersionResolver;
-use AG\ElasticApmLaravel\Events\StartMeasuring;
 use AG\ElasticApmLaravel\Middleware\RecordTransaction;
+use Closure;
 use Illuminate\Config\Repository;
 use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Container\Container;
@@ -44,7 +44,7 @@ class ServiceProvider extends BaseServiceProvider
 
         // Create a single representation of the request start time which can be injected
         // to other classes.
-        $this->app->scoped(
+        $this->registerUnique(
             RequestStartTime::class,
             fn() => new RequestStartTime(Container::getInstance()['request']->server('REQUEST_TIME_FLOAT') ?? microtime(true))
         );
@@ -84,16 +84,15 @@ class ServiceProvider extends BaseServiceProvider
      */
     protected function registerAgent(): void
     {
-        $this->app->scoped(
+        $this->registerUnique(
             EventCounter::class,
             fn() => new EventCounter(config('elastic-apm-laravel.spans.maxTraceItems', EventCounter::EVENT_LIMIT))
         );
 
-        $this->app->scoped(Agent::class, function () {
+        $this->registerUnique(Agent::class, function () {
             /** @var AgentBuilder $builder */
             $app = Container::getInstance();
             $builder = $app->make(AgentBuilder::class);
-
             return $builder
                 ->withConfig(new Config($this->getAgentConfig()))
                 ->withEnvData(config('elastic-apm-laravel.env.env'))
@@ -155,13 +154,12 @@ class ServiceProvider extends BaseServiceProvider
     /**
      * @param class-string<EventDataCollector> $collectorClass
      * @return void
-     * @throws BindingResolutionException
      */
     protected function registerCollector(string $collectorClass): void
     {
         $this->app->tag($collectorClass, self::COLLECTOR_TAG);
         $collectorClass::registerEventListeners($this->app);
-        $this->app->scoped($collectorClass, function () use ($collectorClass) {
+        $this->registerUnique($collectorClass, function () use ($collectorClass) {
             $app = Container::getInstance();
             /** @var DataCollector $instance */
             $instance = new $collectorClass(
@@ -186,19 +184,11 @@ class ServiceProvider extends BaseServiceProvider
         return !$this->app->runningInConsole();
     }
 
-    /**
-     * Publish the config file.
-     *
-     * @param string $configPath
-     */
     protected function publishConfig(): void
     {
         $this->publishes([$this->source_config_path => $this->getConfigPath()], 'config');
     }
 
-    /**
-     * Get the config path.
-     */
     protected function getConfigPath(): string
     {
         return config_path('elastic-apm-laravel.php');
@@ -222,6 +212,9 @@ class ServiceProvider extends BaseServiceProvider
         );
     }
 
+    /**
+     * @throws BindingResolutionException
+     */
     protected function getAppConfig(): array
     {
         $config = config('elastic-apm-laravel.app');
@@ -236,5 +229,10 @@ class ServiceProvider extends BaseServiceProvider
     {
         return false === config('elastic-apm-laravel.active')
             || ($this->app->runningInConsole() && false === config('elastic-apm-laravel.cli.active'));
+    }
+
+    protected function registerUnique(string $abstract, Closure $callback) {
+        $method = $this->app->runningInConsole() ? 'singleton' : 'scoped';
+        $this->app->$method($abstract, $callback);
     }
 }

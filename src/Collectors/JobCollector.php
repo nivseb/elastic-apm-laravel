@@ -59,7 +59,7 @@ class JobCollector extends EventDataCollector implements DataCollector
 
        $app->events->listen(JobFailed::class, function (JobFailed $event) {
            $collector = Container::getInstance()->make(static::class);
-            $transaction_name = $this->getTransactionName($event);
+            $transaction_name = $collector->getTransactionName($event);
             if ($transaction_name) {
                 $transaction = $collector->getTransaction($transaction_name);
                 if ($transaction) {
