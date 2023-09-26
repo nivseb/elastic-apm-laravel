@@ -1,0 +1,25 @@
+<?php
+
+namespace AG\ElasticApmLaravel\Octane;
+
+use Laravel\Octane\Events\RequestReceived;
+
+class PatchGlobalServerVar
+{
+    /** 
+     * needed for APM Agent to handle environment correctly in transaction span 
+     * 
+     * place in octance.php -> RequestReceived
+     * 
+     * */
+    public function handle(RequestReceived $received): void
+    {
+        $_SERVER['HTTP_USER_AGENT'] = $received->request->userAgent();
+        $_SERVER['REQUEST_METHOD']  = $received->request->method();
+        $_SERVER['SERVER_PROTOCOL'] = $received->request->getProtocolVersion();
+        $_SERVER['REMOTE_ADDR']     = getRequestIp($received->request);
+        $_SERVER['QUERY_STRING']    = $received->request->getQueryString();
+        $_SERVER['REQUEST_URI']     = $received->request->getRequestUri();
+        $_SERVER['HTTP_HOST']       = $received->request->getHost();
+    }
+}
