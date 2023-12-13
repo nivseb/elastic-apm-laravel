@@ -142,10 +142,8 @@ class ServiceProvider extends BaseServiceProvider
         }
 
         if ($this->collectHttpEvents()) {
-            Log::debug('APM detect http!');
             $this->registerCollector(HttpRequestCollector::class);
         } else {
-            Log::debug('APM detect cli!');
             $this->registerCollector(CommandCollector::class);
             $this->registerCollector(ScheduledTaskCollector::class);
         }
