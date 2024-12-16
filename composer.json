@@ -16,11 +16,11 @@
     "require": {
         "php": ">=8.0",
         "http-interop/http-factory-guzzle": "^1.0",
-        "illuminate/database": "^11",
-        "illuminate/http": "^11",
-        "illuminate/routing": "^11",
-        "illuminate/support": "^11",
-        "illuminate/contracts": "^11",
+        "illuminate/database": "^10 || ^11",
+        "illuminate/http": "^10 || ^11",
+        "illuminate/routing": "^10 || ^11",
+        "illuminate/support": "^10 || ^11",
+        "illuminate/contracts": "^10 || ^11",
         "jasny/persist-sql-query": "^2.0",
         "nipwaayoni/elastic-apm-php-agent": "^7.5",
         "ext-json": "*"
