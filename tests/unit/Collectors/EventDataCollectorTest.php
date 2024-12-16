@@ -53,11 +53,6 @@ class EventDataCollectorTest extends Unit
         $this->assertEquals('event-collector', $this->eventDataCollector->getName());
     }
 
-    public function testRegistersListenersWhenCreated(): void
-    {
-        $this->assertTrue(self::$registeredListeners);
-    }
-
     public function testStartMeasureAtCurrentTime()
     {
         // Expect the start time and end time
@@ -223,13 +218,13 @@ class EventDataCollectorTest extends Unit
     {
         self::$registeredListeners = false;
 
-        return new class($this->appMock, $this->configMock, $this->requestStartTimeMock, $this->eventCounter, $this->eventClock) extends EventDataCollector {
+        return new class($this->configMock, $this->requestStartTimeMock, $this->eventCounter, $this->eventClock) extends EventDataCollector {
             public function getName(): string
             {
                 return 'event-collector';
             }
 
-            public function registerEventListeners(): void
+            public static function registerEventListeners($app): void
             {
                 EventDataCollectorTest::$registeredListeners = true;
             }

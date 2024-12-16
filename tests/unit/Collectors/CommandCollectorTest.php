@@ -68,7 +68,6 @@ class CommandCollectorTest extends Unit
         $eventCounter = new EventCounter();
 
         $this->collector = new CommandCollector(
-            $this->app,
             $this->configMock,
             $requestStartTimeMock,
             $eventCounter,

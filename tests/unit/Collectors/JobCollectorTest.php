@@ -58,8 +58,6 @@ class JobCollectorTest extends Unit
         $this->agentMock = Mockery::mock(Agent::class);
         $this->configMock = Mockery::mock(Config::class);
 
-        $this->configMock = Mockery::mock(Config::class);
-
         $requestStartTimeMock = Mockery::mock(RequestStartTime::class);
         $requestStartTimeMock->shouldReceive('setStartTime');
         $requestStartTimeMock->shouldReceive('microseconds')->andReturn(1000.0);
@@ -68,7 +66,6 @@ class JobCollectorTest extends Unit
         $eventClock = new EventClock();
 
         $this->collector = new JobCollector(
-            $this->app,
             $this->configMock,
             $requestStartTimeMock,
             $eventCounter,
