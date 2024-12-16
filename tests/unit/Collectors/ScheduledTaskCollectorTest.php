@@ -66,7 +66,6 @@ class ScheduledTaskCollectorTest extends Unit
         $eventCounter = new EventCounter();
 
         $this->collector = new ScheduledTaskCollector(
-            $this->app,
             $this->configMock,
             new RequestStartTime(0.0),
             $eventCounter,

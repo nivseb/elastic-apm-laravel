@@ -51,7 +51,6 @@ class DBQueryCollectorTest extends Unit
         $eventClock = new EventClock();
 
         $this->collector = new DBQueryCollector(
-            $this->app,
             $this->configMock,
             new RequestStartTime(0.0),
             $eventCounter,

@@ -47,7 +47,6 @@ class HttpRequestCollectorTest extends Unit
         $eventClock = new EventClock();
 
         $this->collector = new HttpRequestCollector(
-            $this->app,
             new Config([]),
             new RequestStartTime(0.0),
             $eventCounter,

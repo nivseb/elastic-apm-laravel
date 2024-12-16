@@ -30,8 +30,7 @@
         "codeception/mockery-module": "^0.5",
         "orchestra/testbench": "^9.8",
         "php-http/guzzle7-adapter": "^1.0.0",
-        "symfony/service-contracts": "^2.0",
-        "phpunit/phpunit": "^10"
+        "symfony/service-contracts": "^2.0"
     },
     "suggest": {
         "php-http/guzzle6-adapter": "Guzzle Http client adapter for guzzlehttp/guzzle version 6",

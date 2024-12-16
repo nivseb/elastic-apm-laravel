@@ -24,7 +24,6 @@ class FrameworkCollectorTest extends Unit
         $eventClock = new EventClock();
 
         $this->collector = new FrameworkCollector(
-            $this->app,
             new Config([]),
             new RequestStartTime(0.0),
             $eventCounter,
