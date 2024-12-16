@@ -57,7 +57,7 @@ class Metadata extends EventBean implements \JsonSerializable
                 ],
                 'system' => [
                     'hostname'     => Encoding::keywordField($this->config->hostname()),
-                    'container'    => ['id' => config('elastic-apm-laravel.container.id')],
+                    'container'    => ['id' => $this->config->get('container.id')],
                     'architecture' => php_uname('m'),
                     'platform'     => php_uname('s'),
                 ],

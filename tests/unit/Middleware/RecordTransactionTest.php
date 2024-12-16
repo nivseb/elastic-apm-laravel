@@ -59,6 +59,11 @@ class RecordTransactionTest extends Unit
         $this->config->shouldReceive('get')
             ->with('elastic-apm-laravel.transactions.useRouteUri')
             ->andReturn($use_route_uri);
+        
+        $this->config->shouldReceive('get')
+            ->with('elastic-apm-laravel.sendMetricViaHeader')
+            ->andReturnTrue();
+
         $this->config->shouldReceive('get')
             ->with('elastic-apm-laravel.transactions.ignorePatterns')
             ->once()
